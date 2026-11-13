@@ -19,10 +19,13 @@
 
 .login-card h2 {
   text-align: center;
-  font-weight: bold;
-  margin-bottom: 8px;
+  font-size: 32px;
+  font-weight: 800;
+  color: #2563eb;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+  line-height: 1.2;
 }
-
 .login-card p {
   text-align: center;
   color: #777;
