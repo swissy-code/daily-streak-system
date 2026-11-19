@@ -17,32 +17,33 @@ function App() {
     !!localStorage.getItem("token")
   );
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    try {
-      const response = await API.post("/auth/login", {
-        email,
-        password
-      });
+  try {
+    const response = await API.post("/auth/login", {
+      email: email.trim().toLowerCase(),
+      password
+    });
 
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem(
-        "user",
-        JSON.stringify(response.data.user)
-      );
+    localStorage.setItem("token", response.data.token);
+    localStorage.setItem(
+      "user",
+      JSON.stringify(response.data.user)
+    );
 
-      setIsLoggedIn(true);
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Unable to login"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    setIsLoggedIn(true);
+  } catch (err) {
+    setError(
+      err.response?.data?.message || "Unable to login"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleRegister = async (e) => {
     e.preventDefault();
