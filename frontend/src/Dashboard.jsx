@@ -240,117 +240,249 @@ const handleClaim = async () => {
       </section>
 
       {/* STATISTICS */}
-      <section className="stats-grid">
+      
+      {/* PREMIUM DAILY STREAK */}
+      <section className="streak-premium">
 
-        <div className="stat-card">
-          <p>Current Streak</p>
-          <h2>{streak.currentDay} / 7 Days</h2>
-        </div>
+        <div className="streak-hero">
+          <div className="streak-hero-content">
+            <span className="streak-eyebrow">VELOOP REWARDS</span>
+            <h2>Daily Streak</h2>
+            <p>Keep showing up. Keep earning rewards.</p>
 
-        <div className="stat-card">
-          <p>Wallet Balance</p>
-          <h2>{wallet.balance} VEs</h2>
-        </div>
-
-        <div className="stat-card">
-          <p>Current Cycle</p>
-          <h2>Cycle {streak.cycleId}</h2>
-        </div>
-
-      </section>
-
-      {/* SEVEN DAY REWARDS */}
-      <section className="rewards-section">
-        <h3>Your 7-Day Rewards</h3>
-
-        <div className="rewards-grid">
-          {rewards.map((reward) => (
-            <div
-              className={`reward-card ${
-  reward.enabled === false
-    ? "disabled"
-    : reward.day <= streak.currentDay
-    ? "claimed"
-    : ""
-}`}
-              key={reward.day}
-            >
-              <h4>Day {reward.day}</h4>
-
-              <div className="reward-icon">
-                {reward.type === "VE" ? "🪙" : "🎁"}
+            <div className="streak-hero-number">
+              <span className="streak-flame">🔥</span>
+              <div>
+                <strong>{streak.currentDay || 0}</strong>
+                <span> DAYS COMPLETED</span>
               </div>
-
-              <p>
-                {reward.type === "VE"
-                  ? `${reward.amount} VEs`
-                  : `₹${reward.amount} Gift Card`}
-              </p>
-
-              <small>
-  {reward.enabled === false
-    ? "Unavailable"
-    : reward.day <= streak.currentDay
-    ? "Claimed"
-    : "Upcoming"}
-</small>
             </div>
-          ))}
+          </div>
+
+          <div className="streak-hero-side">
+            <div className="streak-cycle-badge">
+              <span>YOUR CURRENT CYCLE</span>
+              <strong>#{streak.cycleId || 1}</strong>
+            </div>
+
+            <div className="streak-progress-info">
+              <span>Weekly progress</span>
+              <strong>
+                {Math.min(
+                  Number(streak.currentDay || 0),
+                  7
+                )} / 7
+              </strong>
+            </div>
+
+            <div className="streak-progress-track">
+              <div
+                className="streak-progress-fill"
+                style={{
+                  width: `${Math.min(
+                    (Number(streak.currentDay || 0) / 7) * 100,
+                    100
+                  )}%`
+                }}
+              />
+            </div>
+
+            <small>Complete all 7 days to finish your cycle</small>
+          </div>
         </div>
+
+        {/* STREAK STATISTICS */}
+        <div className="streak-stats">
+
+          <div className="streak-stat-card">
+            <span className="streak-stat-icon">🔥</span>
+            <div>
+              <small>Current Streak</small>
+              <strong>{streak.currentDay || 0} Days</strong>
+            </div>
+          </div>
+
+          <div className="streak-stat-card">
+            <span className="streak-stat-icon">🪙</span>
+            <div>
+              <small>Wallet Balance</small>
+              <strong>{wallet.balance || 0} VEs</strong>
+            </div>
+          </div>
+
+          <div className="streak-stat-card">
+            <span className="streak-stat-icon">🏆</span>
+            <div>
+              <small>Longest Streak</small>
+              <strong>Not tracked</strong>
+            </div>
+          </div>
+
+        </div>
+
+        {/* SEVEN DAY CALENDAR */}
+        <div className="streak-panel">
+
+          <div className="streak-section-heading">
+            <div>
+              <span className="streak-eyebrow">YOUR REWARD JOURNEY</span>
+              <h3>7-Day Streak Calendar</h3>
+              <p>Complete each day to unlock your rewards.</p>
+            </div>
+
+            <span className="streak-cycle-label">
+              CYCLE {streak.cycleId || 1}
+            </span>
+          </div>
+
+          <div className="streak-calendar">
+            {rewards.map((reward) => {
+              const completed =
+                reward.day <= Number(streak.currentDay || 0);
+
+              const isNext =
+                reward.day === Number(streak.nextDay);
+
+              const unavailable = reward.enabled === false;
+
+              const dayStatus = unavailable
+                ? "Unavailable"
+                : completed
+                ? "Completed"
+                : isNext
+                ? streak.canClaim
+                  ? "Ready to claim"
+                  : "Next reward"
+                : "Locked";
+
+              return (
+                <div
+                  className={`streak-day-card ${
+                    completed
+                      ? "day-completed"
+                      : isNext
+                      ? "day-current"
+                      : "day-upcoming"
+                  } ${unavailable ? "day-disabled" : ""}`}
+                  key={reward.day}
+                >
+                  <span className="streak-day-label">
+                    DAY {reward.day}
+                  </span>
+
+                  <div className="streak-day-icon">
+                    {unavailable
+                      ? "🔒"
+                      : completed
+                      ? "✓"
+                      : reward.type === "VE"
+                      ? "🪙"
+                      : "🎁"}
+                  </div>
+
+                  <strong className="streak-day-reward">
+                    {reward.type === "VE"
+                      ? `${reward.amount} VEs`
+                      : `₹${reward.amount}`}
+                  </strong>
+
+                  <span className="streak-day-status">
+                    {dayStatus}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* MILESTONE HIGHLIGHT */}
+          {rewards.find((reward) => reward.day === 7) && (
+            <div className="streak-milestone">
+              <span className="milestone-icon">🏆</span>
+
+              <div>
+                <strong>7-Day Milestone</strong>
+                <p>
+                  Complete your full streak cycle to unlock your
+                  Day 7 reward:
+                  {" "}
+                  {rewards.find((reward) => reward.day === 7).type === "VE"
+                    ? `${rewards.find((reward) => reward.day === 7).amount} VEs`
+                    : `₹${rewards.find((reward) => reward.day === 7).amount} Gift Card`}
+                </p>
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* NEXT REWARD */}
+        <div className="streak-next-reward">
+
+          <div className="next-reward-content">
+            <span className="streak-eyebrow">YOUR NEXT UNLOCK</span>
+
+            <h3>
+              {streak.canClaim
+                ? "Your reward is ready!"
+                : `Day ${streak.nextDay || 1} is waiting`}
+            </h3>
+
+            <p>
+              {streak.nextReward?.type === "VE"
+                ? `${streak.nextReward.amount} VEs`
+                : streak.nextReward
+                ? `₹${streak.nextReward.amount} Gift Card`
+                : "Your next reward"}
+            </p>
+
+            <span className="next-reward-description">
+              {streak.canClaim
+                ? "Claim your reward and continue your journey."
+                : "Come back when your countdown is complete."}
+            </span>
+          </div>
+
+          <div className="next-reward-action">
+
+            {!streak.canClaim && (
+              <>
+                <span className="countdown-label">UNLOCKS IN</span>
+                <h2 className="countdown-timer">
+                  {remainingTime || "Calculating..."}
+                </h2>
+              </>
+            )}
+
+            <button
+              className="claim-button premium-claim-button"
+              disabled={
+                !streak.canClaim ||
+                claiming ||
+                streak.nextReward?.enabled === false
+              }
+              onClick={handleClaim}
+            >
+              {claiming
+                ? "Claiming..."
+                : streak.nextReward?.enabled === false
+                ? "Reward Unavailable"
+                : streak.canClaim
+                ? "Claim Your Reward →"
+                : "🔒 Reward Locked"}
+            </button>
+
+          </div>
+
+          {claimMessage && (
+            <p className="streak-claim-message">
+              {claimMessage}
+            </p>
+          )}
+
+        </div>
+
       </section>
 
-      {/* NEXT REWARD */}
-      <section className="claim-section">
-        <h3>Next Reward</h3>
-
-        <p>
-          {streak.canClaim
-            ? "Your next reward is ready!"
-            : `Your next reward is Day ${streak.nextDay}`}
-        </p>
-
-        <p>
-          {streak.nextReward?.type === "VE"
-            ? `${streak.nextReward.amount} VEs`
-            : `₹${streak.nextReward?.amount} Gift Card`}
-        </p>
-
-        <p>
-          {streak.canClaim
-            ? "You can claim now!"
-            : "Your next reward unlocks in:"}
-        </p>
-
-        {!streak.canClaim && (
-          <h2 className="countdown-timer">
-            {remainingTime || "Calculating..."}
-          </h2>
-        )}
-
-        <button
-          className="claim-button"
-          disabled={
-  !streak.canClaim ||
-  claiming ||
-  streak.nextReward?.enabled === false
-}
-          onClick={handleClaim}
-        >
-          {claiming
-  ? "Claiming..."
-  : streak.nextReward?.enabled === false
-  ? "Reward Unavailable"
-  : streak.canClaim
-  ? "Claim Reward"
-  : "Reward Locked"}
-        </button>
-
-        {claimMessage && (
-          <p className="mt-3">
-            {claimMessage}
-          </p>
-        )}
-      </section>
 
       {/* CLAIM HISTORY */}
       <section className="history-section">

@@ -1,47 +1,45 @@
-
 import React, { useEffect, useState } from "react";
 import API from "./api/api";
+import "./AdminDashboard.css";
 
 function AdminDashboard() {
   const [giftCards, setGiftCards] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [rewards, setRewards] = useState([]);
-const [rewardsLoading, setRewardsLoading] = useState(true);
-const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [streakUsers, setStreakUsers] = useState([]);
-const [streakLoading, setStreakLoading] = useState(true);
+
+  const [rewardsLoading, setRewardsLoading] = useState(true);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [streakLoading, setStreakLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [savingRewards, setSavingRewards] = useState(false);
+
+  const [search, setSearch] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  // Fetch gift cards
+  // FETCH GIFT CARDS
   const fetchGiftCards = async () => {
     try {
       setLoading(true);
-
       const response = await API.get("/admin/gift-cards");
-
       setGiftCards(response.data.entitlements || []);
-      setError("");
     } catch (err) {
       setError(
-        err.response?.data?.message ||
-        "Unable to fetch gift cards"
+        err.response?.data?.message || "Unable to fetch gift cards"
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch users
+  // FETCH USERS
   const fetchUsers = async () => {
     try {
       setUsersLoading(true);
-
       const response = await API.get("/admin/users");
-
       setUsers(response.data.users || []);
     } catch (err) {
       console.error("Unable to fetch users:", err);
@@ -49,318 +47,579 @@ const [streakLoading, setStreakLoading] = useState(true);
       setUsersLoading(false);
     }
   };
+
+  // FETCH STREAK USERS
   const fetchStreakUsers = async () => {
-  try {
-    setStreakLoading(true);
+    try {
+      setStreakLoading(true);
+      const response = await API.get("/admin/users/streaks");
+      setStreakUsers(response.data.users || []);
+    } catch (err) {
+      console.error("Unable to fetch streak statistics:", err);
+    } finally {
+      setStreakLoading(false);
+    }
+  };
 
-    const response = await API.get("/admin/users/streaks");
+  // FETCH ANALYTICS
+  const fetchAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      const response = await API.get("/admin/users/analytics");
+      setAnalytics(response.data.analytics);
+    } catch (err) {
+      console.error("Unable to fetch analytics:", err);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
 
-    setStreakUsers(response.data.users || []);
-  } catch (err) {
-    console.error("Unable to fetch streak statistics:", err);
-  } finally {
-    setStreakLoading(false);
-  }
-};
-const fetchAnalytics = async () => {
-  try {
-    setAnalyticsLoading(true);
+  // FETCH REWARDS
+  const fetchRewards = async () => {
+    try {
+      setRewardsLoading(true);
+      const response = await API.get("/admin/rewards");
+      setRewards(response.data.rewards || []);
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Unable to fetch rewards"
+      );
+    } finally {
+      setRewardsLoading(false);
+    }
+  };
 
-    const response = await API.get("/admin/users/analytics");
+  useEffect(() => {
+    fetchGiftCards();
+    fetchUsers();
+    fetchStreakUsers();
+    fetchAnalytics();
+    fetchRewards();
+  }, []);
 
-    setAnalytics(response.data.analytics);
-  } catch (err) {
-    console.error("Unable to fetch analytics:", err);
-  } finally {
-    setAnalyticsLoading(false);
-  }
-};
-const fetchRewards = async () => {
-  try {
-    setRewardsLoading(true);
+  // LOGOUT
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.reload();
+  };
 
-    const response = await API.get("/admin/rewards");
+  // FULFIL GIFT CARD
+  const handleFulfill = async (id) => {
+    if (!window.confirm("Mark this gift card as fulfilled?")) {
+      return;
+    }
 
-    setRewards(response.data.rewards || []);
-  } catch (err) {
-    console.error("Unable to fetch rewards:", err);
-  } finally {
-    setRewardsLoading(false);
-  }
-};
+    try {
+      setMessage("");
+      setError("");
 
-  // Load dashboard data
- useEffect(() => {
-  fetchGiftCards();
-  fetchUsers();
-  fetchStreakUsers();
-  fetchAnalytics();
-  fetchRewards();
-}, []);
-  // Fulfil gift card
-  
-const handleFulfill = async (id) => {
-  const confirmed = window.confirm(
-    "Are you sure you want to mark this gift card as fulfilled?"
-  );
+      const response = await API.patch(
+        `/admin/gift-cards/${id}/fulfill`
+      );
 
-  if (!confirmed) {
-    return;
-  }
+      setMessage(response.data.message);
+      await fetchGiftCards();
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Unable to update gift card"
+      );
+    }
+  };
 
-  try {
-    setMessage("");
-    setError("");
-
-    const response = await API.patch(
-      `/admin/gift-cards/${id}/fulfill`
-    );
-
-    setMessage(response.data.message);
-    await fetchGiftCards();
-  } catch (err) {
-    setError(
-      err.response?.data?.message ||
-      "Unable to update gift card"
-    );
-  }
-};
-
+  // UPDATE REWARD FIELD
   const handleRewardChange = (day, field, value) => {
-  setRewards((previousRewards) =>
-    previousRewards.map((reward) =>
-      reward.day === day
-        ? { ...reward, [field]: value }
-        : reward
-    )
-  );
-};
-
-const handleSaveRewards = async () => {
-  try {
-    setMessage("");
-    setError("");
-console.log("Rewards being saved:", rewards);
-    const response = await API.put("/admin/rewards", {
-      rewards
-    });
-
-    setRewards(response.data.rewards || []);
-    setMessage("Reward configuration saved successfully!");
-  } catch (err) {
-    setError(
-      err.response?.data?.message ||
-      "Unable to save reward configuration"
+    setRewards((previous) =>
+      previous.map((reward) =>
+        reward.day === day
+          ? { ...reward, [field]: value }
+          : reward
+      )
     );
-  }
-};
+  };
+
+  // SAVE REWARDS
+  const handleSaveRewards = async () => {
+    try {
+      setSavingRewards(true);
+      setMessage("");
+      setError("");
+
+      const response = await API.put("/admin/rewards", {
+        rewards
+      });
+
+      setRewards(response.data.rewards || []);
+      setMessage("Reward configuration saved successfully!");
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Unable to save rewards"
+      );
+    } finally {
+      setSavingRewards(false);
+    }
+  };
+
+  // FILTER USERS
+  const filteredUsers = users.filter((user) => {
+    const term = search.toLowerCase();
+
+    return (
+      user.name?.toLowerCase().includes(term) ||
+      user.email?.toLowerCase().includes(term)
+    );
+  });
+
+  const statCards = [
+    {
+      title: "Total Users",
+      value: analytics?.totalUsers ?? 0,
+      icon: "👥",
+      color: "purple"
+    },
+    {
+      title: "Active Streak Users",
+      value: analytics?.activeStreakUsers ?? 0,
+      icon: "🔥",
+      color: "orange"
+    },
+    {
+      title: "Total VE Rewarded",
+      value: `${analytics?.totalVERewarded ?? 0} VEs`,
+      icon: "🪙",
+      color: "green"
+    },
+    {
+      title: "Total VE Debited",
+      value: `${analytics?.totalVEDebited ?? 0} VEs`,
+      icon: "📊",
+      color: "blue"
+    },
+    {
+      title: "Pending Gift Cards",
+      value: analytics?.pendingGiftCards ?? 0,
+      icon: "🎁",
+      color: "pink"
+    },
+    {
+      title: "Fulfilled Gift Cards",
+      value: analytics?.fulfilledGiftCards ?? 0,
+      icon: "🏆",
+      color: "gold"
+    }
+  ];
 
   return (
-    <div className="dashboard-page">
-      <h1>Admin Dashboard</h1>
+    <div className="admin-page">
 
-      <button
-        onClick={() => {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          window.location.reload();
-        }}
-      >
-        Logout
-      </button>
-
-      {/* User Management */}
-      <h2>Platform Analytics</h2>
-
-{analyticsLoading && <p>Loading analytics...</p>}
-
-{analytics && (
-  <section className="stats-grid">
-    <div className="stat-card">
-      <p>Total Users</p>
-      <h2>{analytics.totalUsers}</h2>
-    </div>
-
-    <div className="stat-card">
-      <p>Active Streak Users</p>
-      <h2>{analytics.activeStreakUsers}</h2>
-    </div>
-
-    <div className="stat-card">
-      <p>Total VE Rewarded</p>
-      <h2>{analytics.totalVERewarded} VEs</h2>
-    </div>
-
-    <div className="stat-card">
-      <p>Total VE Debited</p>
-      <h2>{analytics.totalVEDebited} VEs</h2>
-    </div>
-
-    <div className="stat-card">
-      <p>Pending Gift Cards</p>
-      <h2>{analytics.pendingGiftCards}</h2>
-    </div>
-
-    <div className="stat-card">
-      <p>Fulfilled Gift Cards</p>
-      <h2>{analytics.fulfilledGiftCards}</h2>
-    </div>
-  </section>
-)}
-      <h2>User Management</h2>
-
-      {usersLoading && <p>Loading users...</p>}
-
-      {!usersLoading && users.length === 0 && (
-        <p>No registered users found.</p>
-      )}
-
-      {users.map((user) => (
-        <div className="history-item" key={user._id}>
-          <p><strong>Name:</strong> {user.name}</p>
-          <p><strong>Email:</strong> {user.email}</p>
-          <p><strong>Role:</strong> {user.role}</p>
-          <p>
-            <strong>Joined:</strong>{" "}
-            {new Date(user.createdAt).toLocaleDateString()}
-          </p>
+      {/* TOP NAVIGATION */}
+      <header className="admin-header">
+        <div className="admin-brand">
+          <div className="admin-brand-icon">V</div>
+          <div>
+            <h2>VELOOP <span>REWARDS</span></h2>
+            <p>ADMIN CONTROL CENTER</p>
+          </div>
         </div>
-      ))}
 
-      {/* Gift Card Management */}
-      <h2>User Streak Monitoring</h2>
+        <div className="admin-header-actions">
+          <span className="admin-status">
+            <span className="status-dot"></span>
+            Administrator
+          </span>
 
-{streakLoading && <p>Loading streak statistics...</p>}
+          <button
+            className="admin-logout"
+            onClick={handleLogout}
+          >
+            Logout ↗
+          </button>
+        </div>
+      </header>
 
-{!streakLoading && streakUsers.length === 0 && (
-  <p>No user statistics available.</p>
-)}
+      {/* MAIN CONTENT */}
+      <main className="admin-container">
 
-{streakUsers.map((user) => (
-  <div className="history-item" key={user._id}>
-    <h3>{user.name}</h3>
+        {/* HERO */}
+        <section className="admin-hero">
+          <div>
+            <span className="admin-eyebrow">
+              VELOOP MANAGEMENT SYSTEM
+            </span>
 
-    <p>
-      <strong>Email:</strong> {user.email}
-    </p>
+            <h1>Control Center<span>.</span></h1>
 
-    <p>
-      <strong>Current Streak:</strong> {user.currentDay} / 7 Days
-    </p>
+            <p>
+              Manage your platform, monitor streaks and control rewards.
+            </p>
+          </div>
 
-    <p>
-      <strong>Wallet Balance:</strong> {user.walletBalance} VEs
-    </p>
+          <div className="admin-hero-icon">⚡</div>
+        </section>
 
-    <p>
-      <strong>Total Claims:</strong> {user.totalClaims}
-    </p>
-  </div>
-))}
-<h2>Reward Configuration</h2>
+        {/* ALERTS */}
+        {error && (
+          <div className="admin-alert admin-alert-error">
+            {error}
+            <button onClick={() => setError("")}>×</button>
+          </div>
+        )}
 
-{rewardsLoading && <p>Loading reward settings...</p>}
+        {message && (
+          <div className="admin-alert admin-alert-success">
+            {message}
+            <button onClick={() => setMessage("")}>×</button>
+          </div>
+        )}
 
-{!rewardsLoading && rewards.map((reward) => (
-  <div className="history-item" key={reward.day}>
-    <h3>Day {reward.day}</h3>
-    <p
-  style={{
-    fontWeight: "bold",
-    color: reward.enabled ? "green" : "red"
-  }}
->
-  {reward.enabled ? "ACTIVE" : "DISABLED"}
-</p>
+        {/* ANALYTICS */}
+        <section className="admin-section" id="analytics">
+          <div className="admin-section-heading">
+            <div>
+              <span className="admin-eyebrow">PLATFORM OVERVIEW</span>
+              <h2>Platform Analytics</h2>
+              <p>Your platform performance at a glance.</p>
+            </div>
+            <span className="admin-section-icon">📈</span>
+          </div>
 
-    <label>Reward Type</label>
-    <select
-      value={reward.type}
-      onChange={(e) =>
-        handleRewardChange(
-          reward.day,
-          "type",
-          e.target.value
-        )
-      }
-    >
-      <option value="VE">VE</option>
-      <option value="GIFT_CARD">Gift Card</option>
-    </select>
+          {analyticsLoading ? (
+            <p className="admin-loading">Loading analytics...</p>
+          ) : (
+            <div className="admin-stats-grid">
+              {statCards.map((stat) => (
+                <div
+                  className={`admin-stat-card ${stat.color}`}
+                  key={stat.title}
+                >
+                  <div className="admin-stat-top">
+                    <span>{stat.title}</span>
+                    <div className="admin-stat-icon">
+                      {stat.icon}
+                    </div>
+                  </div>
 
-    <label>Reward Amount</label>
-    <input
-      type="number"
-      min="1"
-      value={reward.amount}
-      onChange={(e) =>
-        handleRewardChange(
-          reward.day,
-          "amount",
-          Number(e.target.value)
-        )
-      }
-    />
-
-    <label>
-      <input
-        type="checkbox"
-        checked={reward.enabled}
-        onChange={(e) =>
-          handleRewardChange(
-            reward.day,
-            "enabled",
-            e.target.checked
-          )
-        }
-      />
-      Enable this reward
-    </label>
-  </div>
-))}
-
-{!rewardsLoading && rewards.length > 0 && (
-  <button
-    className="btn btn-success"
-    onClick={handleSaveRewards}
-  >
-    Save Reward Configuration
-  </button>
-)}
-      <h2>Gift Card Management</h2>
-
-      {loading && <p>Loading gift cards...</p>}
-
-      {error && (
-        <p className="alert alert-danger">{error}</p>
-      )}
-
-      {message && (
-        <p className="alert alert-success">{message}</p>
-      )}
-
-      {!loading && giftCards.length === 0 && (
-        <p>No gift card entitlements available yet.</p>
-      )}
-
-      {giftCards.map((card) => (
-        <div className="history-item" key={card._id}>
-          <p>User: {card.userId?.name || "Unknown"}</p>
-          <p>Email: {card.userId?.email || "Unknown"}</p>
-          <p>Day: {card.day}</p>
-          <p>Amount: ₹{card.amount}</p>
-          <p>Status: {card.status}</p>
-
-          {card.status === "PENDING" && (
-            <button
-              className="btn btn-success"
-              onClick={() => handleFulfill(card._id)}
-            >
-              Mark Fulfilled
-            </button>
+                  <strong>{stat.value}</strong>
+                </div>
+              ))}
+            </div>
           )}
-        </div>
-      ))}
+        </section>
+
+        {/* USER MANAGEMENT */}
+        <section className="admin-section" id="users">
+          <div className="admin-section-heading">
+            <div>
+              <span className="admin-eyebrow">ACCOUNT MANAGEMENT</span>
+              <h2>User Management</h2>
+              <p>View registered members and account details.</p>
+            </div>
+            <span className="admin-section-icon">👥</span>
+          </div>
+
+          <input
+            className="admin-search"
+            type="text"
+            placeholder="Search users by name or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+
+          {usersLoading ? (
+            <p className="admin-loading">Loading users...</p>
+          ) : filteredUsers.length === 0 ? (
+            <div className="admin-empty">No matching users found.</div>
+          ) : (
+            <div className="admin-user-grid">
+              {filteredUsers.map((user) => (
+                <div className="admin-user-card" key={user._id}>
+                  <div className="admin-user-top">
+                    <div className="admin-avatar">
+                      {user.name?.charAt(0)?.toUpperCase() || "U"}
+                    </div>
+
+                    <span
+                      className={
+                        user.role === "ADMIN"
+                          ? "admin-role admin-role-admin"
+                          : "admin-role"
+                      }
+                    >
+                      {user.role || "USER"}
+                    </span>
+                  </div>
+
+                  <h3>{user.name}</h3>
+                  <p className="admin-user-email">{user.email}</p>
+
+                  <div className="admin-user-meta">
+                    <span>Joined</span>
+                    <strong>
+                      {user.createdAt
+                        ? new Date(user.createdAt).toLocaleDateString()
+                        : "Unknown"}
+                    </strong>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* STREAK MONITORING */}
+        <section className="admin-section" id="streaks">
+          <div className="admin-section-heading">
+            <div>
+              <span className="admin-eyebrow">MEMBER ACTIVITY</span>
+              <h2>Streak Monitoring</h2>
+              <p>Monitor user streak progress and wallet balances.</p>
+            </div>
+            <span className="admin-section-icon">🔥</span>
+          </div>
+
+          {streakLoading ? (
+            <p className="admin-loading">Loading streak statistics...</p>
+          ) : streakUsers.length === 0 ? (
+            <div className="admin-empty">
+              No streak statistics available.
+            </div>
+          ) : (
+            <div className="admin-streak-grid">
+              {streakUsers.map((user) => (
+                <div className="admin-streak-card" key={user._id}>
+                  <div className="admin-streak-user">
+                    <div className="admin-avatar">🔥</div>
+                    <div>
+                      <h3>{user.name}</h3>
+                      <p>{user.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="admin-streak-metrics">
+                    <div>
+                      <span>Current Cycle</span>
+                      <strong>{user.currentDay} / 7</strong>
+                    </div>
+
+                    <div>
+                      <span>Wallet Balance</span>
+                      <strong>{user.walletBalance} VEs</strong>
+                    </div>
+
+                    <div>
+                      <span>Total Claims</span>
+                      <strong>{user.totalClaims}</strong>
+                    </div>
+                  </div>
+
+                  <div className="admin-progress-track">
+                    <div
+                      className="admin-progress-fill"
+                      style={{
+                        width: `${Math.min(
+                          (Number(user.currentDay || 0) / 7) * 100,
+                          100
+                        )}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* REWARD CONFIGURATION */}
+        <section className="admin-section" id="rewards">
+          <div className="admin-section-heading">
+            <div>
+              <span className="admin-eyebrow">REWARD MANAGEMENT</span>
+              <h2>Seven-Day Reward Cycle</h2>
+              <p>Configure the rewards available to your members.</p>
+            </div>
+            <span className="admin-section-icon">🎁</span>
+          </div>
+
+          {rewardsLoading ? (
+            <p className="admin-loading">Loading reward settings...</p>
+          ) : rewards.length === 0 ? (
+            <div className="admin-empty">
+              No reward configuration found. Check your administrator
+              permissions and refresh the page.
+            </div>
+          ) : (
+            <>
+              <div className="admin-reward-calendar">
+                {rewards.map((reward) => (
+                  <div
+                    className={`admin-reward-card ${
+                      reward.enabled ? "reward-active" : "reward-disabled"
+                    }`}
+                    key={reward.day}
+                  >
+                    <div className="admin-reward-top">
+                      <span>DAY {reward.day}</span>
+                      <span className="admin-reward-status">
+                        {reward.enabled ? "ACTIVE" : "DISABLED"}
+                      </span>
+                    </div>
+
+                    <div className="admin-reward-icon">
+                      {reward.enabled
+                        ? reward.type === "VE" ? "🪙" : "🎁"
+                        : "🔒"}
+                    </div>
+
+                    <strong className="admin-reward-value">
+                      {reward.type === "VE"
+                        ? `${reward.amount} VEs`
+                        : `₹${reward.amount}`}
+                    </strong>
+
+                    <span className="admin-reward-caption">
+                      {reward.type === "VE" ? "VE Reward" : "Gift Card"}
+                    </span>
+
+                    <div className="admin-reward-fields">
+                      <label>Reward Type</label>
+                      <select
+                        value={reward.type}
+                        onChange={(e) =>
+                          handleRewardChange(
+                            reward.day,
+                            "type",
+                            e.target.value
+                          )
+                        }
+                      >
+                        <option value="VE">VE</option>
+                        <option value="GIFT_CARD">Gift Card</option>
+                      </select>
+
+                      <label>Reward Amount</label>
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={reward.amount}
+                        onChange={(e) =>
+                          handleRewardChange(
+                            reward.day,
+                            "amount",
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+
+                      <label className="admin-toggle">
+                        <input
+                          type="checkbox"
+                          checked={reward.enabled}
+                          onChange={(e) =>
+                            handleRewardChange(
+                              reward.day,
+                              "enabled",
+                              e.target.checked
+                            )
+                          }
+                        />
+                        Enable reward
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="admin-reward-footer">
+                <p>Changes apply after saving your configuration.</p>
+
+                <button
+                  className="admin-save-button"
+                  onClick={handleSaveRewards}
+                  disabled={savingRewards}
+                >
+                  {savingRewards ? "Saving..." : "Save Reward Configuration →"}
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+
+        {/* GIFT CARD MANAGEMENT */}
+        <section className="admin-section" id="giftcards">
+          <div className="admin-section-heading">
+            <div>
+              <span className="admin-eyebrow">REDEMPTION MANAGEMENT</span>
+              <h2>Gift Card Management</h2>
+              <p>Track and fulfil member gift card entitlements.</p>
+            </div>
+            <span className="admin-section-icon">🎫</span>
+          </div>
+
+          {loading ? (
+            <p className="admin-loading">Loading gift cards...</p>
+          ) : giftCards.length === 0 ? (
+            <div className="admin-empty">
+              No gift card entitlements available yet.
+            </div>
+          ) : (
+            <div className="admin-gift-grid">
+              {giftCards.map((card) => (
+                <div className="admin-gift-card" key={card._id}>
+                  <div className="admin-gift-icon">🎁</div>
+
+                  <div className="admin-gift-amount">
+                    ₹{card.amount}
+                  </div>
+
+                  <span
+                    className={
+                      card.status === "FULFILLED"
+                        ? "gift-status gift-fulfilled"
+                        : "gift-status gift-pending"
+                    }
+                  >
+                    {card.status}
+                  </span>
+
+                  <div className="admin-gift-details">
+                    <p>
+                      <span>Member</span>
+                      <strong>{card.userId?.name || "Unknown"}</strong>
+                    </p>
+
+                    <p>
+                      <span>Email</span>
+                      <strong>{card.userId?.email || "Unknown"}</strong>
+                    </p>
+
+                    <p>
+                      <span>Reward Day</span>
+                      <strong>Day {card.day}</strong>
+                    </p>
+                  </div>
+
+                  {card.status === "PENDING" && (
+                    <button
+                      className="admin-fulfill-button"
+                      onClick={() => handleFulfill(card._id)}
+                    >
+                      Mark as Fulfilled ✓
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* FOOTER */}
+        <footer className="admin-footer">
+          <strong>VELOOP REWARDS</strong>
+          <span>ADMIN CONTROL CENTER</span>
+        </footer>
+
+      </main>
     </div>
   );
 }
