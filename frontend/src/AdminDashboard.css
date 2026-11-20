@@ -785,3 +785,66 @@
     transition: none !important;
   }
 }
+
+/* ===== ADMIN DASHBOARD FULL SCREEN ===== */
+
+.admin-dashboard,
+.admin-dashboard-container,
+.admin-container {
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+}
+
+/* Main admin content */
+.admin-main,
+.admin-content {
+  width: 100%;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Analytics and dashboard cards */
+.admin-stats,
+.analytics-grid,
+.admin-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, 220px), 1fr)
+  );
+  gap: 20px;
+}
+
+/* Tables should fit smaller screens */
+.admin-table-container,
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Prevent content overflow */
+.admin-dashboard *,
+.admin-dashboard-container *,
+.admin-container * {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .admin-dashboard,
+  .admin-dashboard-container,
+  .admin-container {
+    padding: 16px;
+  }
+
+  .admin-stats,
+  .analytics-grid,
+  .admin-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}

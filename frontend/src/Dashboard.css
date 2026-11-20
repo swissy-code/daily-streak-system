@@ -888,3 +888,59 @@
     transition: none !important;
   }
 }
+
+/* ===== USER DASHBOARD FULL SCREEN ===== */
+
+.dashboard-container,
+.dashboard,
+.user-dashboard {
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+}
+
+/* Dashboard content */
+.dashboard-main,
+.dashboard-content {
+  width: 100%;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Responsive dashboard cards */
+.dashboard-grid,
+.stats-grid,
+.rewards-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, 240px), 1fr)
+  );
+  gap: 20px;
+}
+
+/* Prevent content overflow */
+.dashboard-container *,
+.dashboard *,
+.user-dashboard * {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .dashboard-container,
+  .dashboard,
+  .user-dashboard {
+    padding: 16px;
+  }
+
+  .dashboard-grid,
+  .stats-grid,
+  .rewards-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
